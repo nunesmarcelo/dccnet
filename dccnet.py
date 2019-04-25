@@ -21,7 +21,7 @@ class DccNET:
         # ---------------------------------------------------------------------------------
         
         if(len(sys.argv) != 5): # Checa parâmetros
-            print("É necessário enviar 5 parâmetros para a execução correta do programa.")
+            print("É necessário enviar 4 parâmetros para a execução correta do programa.")
             sys.exit(0)
 
         self.type = sys.argv[1] # Type : -c = Cliente , -v = Servidor
@@ -79,21 +79,7 @@ class DccNET:
                 id , flags , checksum , dados  = self.recebePacote() # Recebe o pacote
 
                 # --------------- Verifica checksum - se der erro: joga fora pacote, senão: continua recebendo ---------------------
-                # print("id: " , id)
-                # print("flags: " , flags)
-                # print("dados: " , dados , " - tamanho: " , len(dados))
-                # print("recebido: " , checksum)
-                # print("Calculado: " , self.calc_checksum( id,flags, dados ))
-                # print( "checksum: " , self.calc_checksum( id,flags, dados, checksum ))
-                # print("-" * 50)
                 if (self.calc_checksum( id,flags, dados, checksum ) != "0000") : #retorna "0" se checksum tiver correto
-                    # print("pacote jogado fora!! ********************************************************************")
-                    # print("id:" , id)
-                    # print("flags: ",flags)
-                    # print("dados: " , dados)
-                    # print("checksum antes: " , checksum)
-                    # print("checksum depois envio:" , self.calc_checksum( id,flags, dados ))
-                    # print("Soma checksums::" , self.calc_checksum( id,flags, dados, checksum ))
                     continue # Passa para a próxima execução (receber outro pacote), se este pacote vier com falha no checksum
                 
                 if(flags == self.FlagACK): # Se for um ACK - pacote confirmado, bora para o próximo =)
@@ -131,7 +117,6 @@ class DccNET:
         byteLido = self.input.read(1) # lê os 512 bytes possíveis de um pacote
         mensagem = ""
         mensagemSemDLE = "" #Usada para o cálculo do checksum
-        bla = ""
         while (contador > 0 and byteLido ):
             byteCodificado = self.encode16(byteLido)
 
@@ -141,7 +126,6 @@ class DccNET:
             
             mensagem += byteCodificado
             mensagemSemDLE += byteCodificado
-            bla += byteCodificado + "|"
             contador -= 1 
             if contador > 0:
                 byteLido = self.input.read(1)
@@ -152,19 +136,6 @@ class DccNET:
 
         # --------------- Cálculo do checksum para enviar junto do pacote ---------------------
         checksum = self.calc_checksum(self.ID_Envio , self.FlagData , mensagemSemDLE)
-
-        if(len(checksum) > 4):
-            print("Checksum len:" , len(checksum) , " - ", checksum)
-            sys.exit(0)
-
-        # print("Antes de enviar:")
-        # print("id: " , self.ID_Envio)
-        # print("flag: " , self.FlagData)
-        # print("dados: " , bla , " - tamanho: " , len(mensagemSemDLE))
-        # print("checksum calculado: ", checksum)
-        # print("-" * 50)
-
-        # --------------- Fim cálculo checksum ------------------------------------------------
 
         # =========SOF====================ID======================FLAG=========DATA========EOF==========
         empacotado = self.SOF + self.ID_Envio + self.FlagData + checksum + mensagem + self.EOF  #= Montando pacote =)
@@ -215,21 +186,17 @@ class DccNET:
         if(flags == self.FlagData): 
             byteLido = bytes.decode(self.conexao.recv(2)) # Lê o primeiro byte de dados
             dados = "" # Variável que armazena o hexadecimal com a saída
-            dadosBla = ""
             while( byteLido ): #Enquanto não chegar o fim do pacote ou o byteLido não for vazio
                 if( byteLido == self.DLE ): # Se houver um byte de escape, pegue o próximo como dado
                     byteLido = bytes.decode(self.conexao.recv(2))
                     dados += byteLido #armazena os dados recebidos
-                    dadosBla += byteLido + "|"
                     byteLido = bytes.decode( self.conexao.recv(2) )
                     continue
 
                 if( byteLido == self.EOF): # Condição de parada.. quando chegar um EOF preencha ele no pacote , e pare
                     eof = byteLido
-                    print("Bla: " , dadosBla)
                     break
                 dados += byteLido #armazena os dados recebidos
-                dadosBla += byteLido + "|"
                 byteLido = bytes.decode( self.conexao.recv(2) )
 
             # Como a flag é de dados, após a leitura correta destes, é possível retornar o pacote completo
@@ -276,7 +243,6 @@ class DccNET:
     # ----------------------------------------- Calculo do checksum + conferência --------------------------------------------------------------
     def calc_checksum (self , id, flag, dados = None, checksum="0000"):
         #Declaração dos Constantes
-
         DIVISOR_CHECKSUM = 65536 #Maior número que pode ser representado com 2 bytes (2¹⁶)
         SOF = "cc"
         EOF = "cd"
@@ -291,9 +257,11 @@ class DccNET:
         for aux_data in textwrap.wrap(pacote,4):
             soma += int(aux_data,16)
             carry = int(soma / DIVISOR_CHECKSUM)#Verifica se existe carrys a serem somados
+            if carry > 0:
+                soma = soma % DIVISOR_CHECKSUM + carry
 
         soma += int(checksum,16)#chacksum é somado apos o cálculo do pacote
-        return hex(((soma % DIVISOR_CHECKSUM) + carry) ^ 0xFFFF)[2:].zfill(4) #Retorna o complemento de 1 do pacote
+        return hex((soma % DIVISOR_CHECKSUM) ^ 0xFFFF)[2:].zfill(4) #Retorna o complemento de 1 do pacote
 # ----------------------------------------- Fim da classe DccNET ------------------------------------------------------------------------------
 
 if __name__ == "__main__":
