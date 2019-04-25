@@ -1,1 +1,1 @@
-python dccnet.py -c 127.0.0.1:1234 "in-client.txt" "out-client.txt"
+python dccnet.py -c 127.0.0.1:1234 "in-client.txt" "grande3.jpg"
