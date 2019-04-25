@@ -87,13 +87,13 @@ class DccNET:
                 # print( "checksum: " , self.calc_checksum( id,flags, dados, checksum ))
                 # print("-" * 50)
                 if (self.calc_checksum( id,flags, dados, checksum ) != "0000") : #retorna "0" se checksum tiver correto
-                    print("pacote jogado fora!! ********************************************************************")
-                    print("id:" , id)
-                    print("flags: ",flags)
-                    print("dados: " , dados)
-                    print("checksum antes: " , checksum)
-                    print("checksum depois envio:" , self.calc_checksum( id,flags, dados ))
-                    print("Soma checksums::" , self.calc_checksum( id,flags, dados, checksum ))
+                    # print("pacote jogado fora!! ********************************************************************")
+                    # print("id:" , id)
+                    # print("flags: ",flags)
+                    # print("dados: " , dados)
+                    # print("checksum antes: " , checksum)
+                    # print("checksum depois envio:" , self.calc_checksum( id,flags, dados ))
+                    # print("Soma checksums::" , self.calc_checksum( id,flags, dados, checksum ))
                     continue # Passa para a próxima execução (receber outro pacote), se este pacote vier com falha no checksum
                 
                 if(flags == self.FlagACK): # Se for um ACK - pacote confirmado, bora para o próximo =)
@@ -153,12 +153,16 @@ class DccNET:
         # --------------- Cálculo do checksum para enviar junto do pacote ---------------------
         checksum = self.calc_checksum(self.ID_Envio , self.FlagData , mensagemSemDLE)
 
-        print("Antes de enviar:")
-        print("id: " , self.ID_Envio)
-        print("flag: " , self.FlagData)
-        print("dados: " , bla , " - tamanho: " , len(mensagemSemDLE))
-        print("checksum calculado: ", checksum)
-        print("-" * 50)
+        if(len(checksum) > 4):
+            print("Checksum len:" , len(checksum) , " - ", checksum)
+            sys.exit(0)
+
+        # print("Antes de enviar:")
+        # print("id: " , self.ID_Envio)
+        # print("flag: " , self.FlagData)
+        # print("dados: " , bla , " - tamanho: " , len(mensagemSemDLE))
+        # print("checksum calculado: ", checksum)
+        # print("-" * 50)
 
         # --------------- Fim cálculo checksum ------------------------------------------------
 
